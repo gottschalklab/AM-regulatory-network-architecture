@@ -1,0 +1,87 @@
+---
+title: "GSE280003_topicModeling_analysis"
+output: html_notebook
+---
+
+```{r, echo=FALSE}
+library(Matrix)
+#install.packages("fastTopics")
+library(ggplot2)
+library(cowplot)
+library(fastTopics)
+library(arrow)
+library(igraph)
+library(tidyverse)
+library(Rtsne)
+setwd("/bgfs/rgottschalk/Sonia/CellOracle/topicModeling")
+```
+```{r}
+AMmatrix <- readMM("//bgfs//rgottschalk//Sonia//CellOracle//20250320_GSE280003_allAM_expression.mtx")
+cols <- read.csv("//bgfs//rgottschalk//Sonia//CellOracle//20250320_GSE280003_allAM_expression_col_names.tsv", sep="\t", header=FALSE)
+rows <- read.csv("//bgfs//rgottschalk//Sonia//CellOracle//20250320_GSE280003_allAM_expression_row_names.tsv", sep="\t", header=FALSE)
+colnames(AMmatrix) <- cols$V1
+row.names(AMmatrix) <- rows$V1
+AMmatrix <- t(AMmatrix)
+AMmatrix <- as(AMmatrix, "CsparseMatrix")  
+
+fit4 <- readRDS("20250322_GSE280003_AMsLPS_Topicfit4.RDS")
+fit5 <- readRDS("20250322_GSE280003_AMsLPS_Topicfit5.RDS")
+fit6og <- readRDS("20250322_GSE280003_AMsLPS_Topicfit6.RDS")
+fit6 <- readRDS("20250324_GSE280003_AMsLPS_Topicfit6_iter150.RDS")
+fit7 <- readRDS("20250324_GSE280003_AMsLPS_Topicfit7_iter150.RDS")
+#write_csv(as.data.frame(fit7$L), '20251210_topicModeling_fit7_barcodes.csv')
+
+nonzero_genes <- row.names(fit7$F)
+AMmtx <- AMmatrix[,nonzero_genes]
+
+AMlabels <- read.csv("//bgfs//rgottschalk//Sonia//CellOracle//20250325_GSE280003_barcode_labels.csv")
+AMlabels <- list(barcodes = AMlabels$X, labs =AMlabels$label)
+
+AMdf <- read_parquet("//bgfs//rgottschalk//Sonia//CellOracle//GSE280003_scRNAseq//20250304_GSE280003_allAM_expression_table.parquet")
+#df_num <- dplyr::select_if(AMdf, is.numeric)
+#AM_k3 <- kmeans(x=df_num, centers=4)
+row.names(AMdf) <- AMlabels$barcodes
+AMdf <- as.data.frame(AMdf)
+
+
+AMdf$TIME <- AMlabels$labs
+
+
+allfits <- list(k4 = fit4, k5 = fit5, k6iter100 = fit6og, k6iter150 = fit6, k7iter150 = fit7)
+
+compared <- compare_fits(allfits)
+
+kcolors <- c('red', 'orange', 'limegreen', 'forestgreen', 'blue')
+
+current <- fit7
+
+plot_progress(allfits, x="iter", add.point.every = 10, colors = kcolors)
+plot_progress(allfits, x="iter", y="res", add.point.every = 10, colors = kcolors)
+```
+```{r}
+plot_progress(fit4, x="iter",add.point.every = 10, color='red')
+plot_progress(fit5, x="iter",add.point.every = 10, color= 'orange')
+plot_progress(fit6og, x='iter', add.point.every = 10, color='limegreen')
+plot_progress(fit6, x='iter', add.point.every = 10, color='forestgreen')
+plot_progress(fit7, x='iter',add.point.every = 10, color='blue')
+
+```
+```{r, echo=FALSE, message=FALSE}
+loglik <- loglik_multinom_topic_model(AMmtx, current)
+pdat <- data.frame(loglik)
+ggplot(pdat,aes(loglik)) +
+  geom_histogram(bins = 64,color = "white",fill = "black",size = 0.25) +
+  labs(y = "number of cells") +
+  theme_cowplot(font_size = 10)
+```
+```{r, echo=FALSE}
+topic_colors <- c("skyblue","forestgreen","darkmagenta","dodgerblue",
+                  "gold","darkorange", "red")
+structure_plot(current,colors = topic_colors)
+
+structure_plot(fit7, colors=topic_colors, gap=25, grouping=AMlabels$labs)
+#ggsave('20250407_GSE280003_fit7_structPlot.pdf')
+```
+
+
+

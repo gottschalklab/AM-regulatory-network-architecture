@@ -1,0 +1,594 @@
+
+		<html>
+			<head>
+				<title>Bias factorized ChromBPNet training and quality check report</title>
+			</head>	
+			<body>
+				<h3>Bias factorized ChromBPNet training and quality check report</h3>
+			</body>
+			<body>
+			    <style> 
+  				    table.dataframe, th, td {font-size:11pt; border:1px solid black; border-collapse:collapse; text-align:center;}
+ 				   th, td {padding: 5px;}
+			    </style>
+			    <style> 
+  				    table.new {font-size:11pt; border:1px solid black; width:100% ; border-collapse:collapse; text-align:center;}
+ 				   th, td {padding: 5px;}
+			    </style>
+			</body>
+			
+			<body style="font-size:20px;">
+				<h3>Preprocessing report</h3>
+				<p>The image below should look closely like a Tn5 or DNase bias enzyme motif. </p>
+				<img src=./bw_shift_qc.png style="max-width: 60%;">
+				<h3>Bias model performance in peaks</h3>
+				<p><b> Counts Metrics: </b> 	The pearsonr in peaks should be greater than -0.3 (otherwise the bias model could potentially be capturing AT bias).  	MSE (Mean Squared Error) will be high in peaks. <br> <br> <b> Profile Metrics:</b>  Median JSD (Jensen Shannon Divergence between observed and predicted) lower the better. 	Median norm JSD is median of the min-max normalized JSD where min JSD is the worst case JSD i.e JSD of observed with uniform profile and 	max JSD is the best case JSD i.e 0. Median norm JSD is higher the better. Both JSD and median norm JSD are sensitive to read-depth. 	Higher read-depth results in better metrics. 	<br> 	<br> 	<b> What to do if your pearsonr in peaks is less than -0.3? </b> 	In the range of -0.3 to -0.5 please be wary of your chrombpnet_wo_bias.h5 TFModisco results showing lots of GC rich motifs (> 3 in the top-10). If this is not the case 	you can continue using the chrombpnet_wo_bias.h5. If you end up seeing a lot of GC rich motifs it is likely that bias model has learnt a different GC distribution than your GC-content in peaks. 	If you are transferring a bias model from a different sample you can consider using a different bias model or <a href="https://github.com/kundajelab/chrombpnet/wiki/Bias-model-training">training a bias model</a> for this sample. 	If you have trained a bias model for this sample and encounter this you might have to  	increase the bias_threshold_factor argument input to the <em>chrombpnet bias pipeline</em> or <em>chrombpnet bias train</em> command used in training the bias model 	and retrain a new bias model. For more intuition about this argument refer to the <a href="https://github.com/kundajelab/chrombpnet/wiki/FAQ">FAQ</a> section in wiki. 	If the value is less than -0.5 the pipline will automatically throw an error.</p>
+				<table border="1" class="dataframe mystyle">
+  <thead>
+    <tr style="text-align: center;">
+      <th></th>
+      <th>peaks.pearsonr</th>
+      <th>peaks.mse</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>counts_metrics</th>
+      <td>0.393319</td>
+      <td>11.214315</td>
+    </tr>
+  </tbody>
+</table>
+				<table border="1" class="dataframe mystyle">
+  <thead>
+    <tr style="text-align: center;">
+      <th></th>
+      <th>peaks.median_jsd</th>
+      <th>peaks.median_norm_jsd</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>profile_metrics</th>
+      <td>0.594247</td>
+      <td>0.161043</td>
+    </tr>
+  </tbody>
+</table>
+			</body>
+			<body style="font-size:20px;">
+				<h3>Training report</h3>
+				<p>The val loss (validation loss) will decrease and saturate after a few epochs.</p>
+				<img src=./epoch_loss.png class="center", style="max-width: 20%">
+			</body>
+
+		
+			
+			<body style="font-size:20px;">
+				<h3>ChromBPNet model performance in peaks</h3>
+				<p><b> Counts Metrics: </b> The pearsonr in peaks should be greater than 0.5 (higher the better). 	MSE (Mean Squared Error) will be low in peaks. <br> <br> <b> Profile Metrics:</b>  Median JSD (Jensen Shannon Divergence between observed and predicted) lower the better. 	Median norm JSD is median of the min-max normalized JSD where min JSD is the worst case JSD i.e JSD of observed with uniform profile and 	max JSD is the best case JSD i.e 0. Median norm JSD is higher the better. Both JSD and median norm JSD are sensitive to read-depth. 	Higher read-depth results in better metrics.</p>
+				<table border="1" class="dataframe mystyle">
+  <thead>
+    <tr style="text-align: center;">
+      <th></th>
+      <th>peaks.pearsonr</th>
+      <th>peaks.mse</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>counts_metrics</th>
+      <td>0.534233</td>
+      <td>0.441378</td>
+    </tr>
+  </tbody>
+</table>
+				<table border="1" class="dataframe mystyle">
+  <thead>
+    <tr style="text-align: center;">
+      <th></th>
+      <th>peaks.median_jsd</th>
+      <th>peaks.median_norm_jsd</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>profile_metrics</th>
+      <td>0.500643</td>
+      <td>0.290034</td>
+    </tr>
+  </tbody>
+</table>
+			</body>	
+			
+					<body>	
+						<h3>ChromBPNet marginal footprints on tn5 motifs</h3>
+						<p>The marginal footprints are the response of the ChromBPNet no bias model to the hetergenous bias motifs. 	If the bias correction is complete the max of the profiles below should be below 0.003 on all the 	bias motifs. </p>
+						<p>For your convenience we calculate here the average of the max of the profiles: 0.001 And the model according to this is <b>corrected</b> 	<br> 	<br> 	<b> What to do if your model looks uncorrected (i.e max of profiles is greater than 0.003)? </b> <br> 	Look at the motifs below captured by TFModisco and you should be able to see motifs that closely look like the bias motifs showing incomplete bias correction. 	This indicates that your bias model was not completely capturing the response of the bias. We recommend that you 	use a different pre-trained bias model. For more intuition on choosing the correct pre-trained model or retraining your bias model refer to 	<a href="https://github.com/kundajelab/chrombpnet/wiki/FAQ">FAQ</a> section in wiki.</p>	
+						<table>
+						 <thead>
+							<tr>		
+								<td>tn5 motif 1</td>
+								<td>tn5 motif 2</td>
+								<td>tn5 motif 3</td>
+								<td>tn5 motif 4</td>
+								<td>tn5 motif 5</td>
+							</tr>
+						  </thead>
+						<tbody>	
+							<tr>		
+								<td><img src=./chrombpnet_nobias.tn5_1.footprint.png class="cover" style="width: 100%; display: block;"></td>
+								<td><img src=./chrombpnet_nobias.tn5_2.footprint.png class="cover" style="width: 100%; display: block;"></td>
+								<td><img src=./chrombpnet_nobias.tn5_3.footprint.png class="cover" style="width: 100%; display: block;"></td>
+								<td><img src=./chrombpnet_nobias.tn5_4.footprint.png class="cover" style="width: 100%; display: block;"></td>
+								<td><img src=./chrombpnet_nobias.tn5_5.footprint.png class="cover" style="width: 100%; display: block;"></td>
+							</tr>
+						</tbody>
+						</table>
+					</body>
+					
+				<body style="font-size:20px;">
+					<h3>TFModisco motifs learnt from ChromBPNet after bias correction (chrombpnet_nobias.h5) model</h3>
+					<p><b> TFModisco motifs generated from profile contribution scores of the ChromBPNet after bias correction model. </b> 	cwm_fwd, cwm_rev are the forward and reverse complemented consolidated motifs from contribution scores in subset of random peaks. 	These CWM motifs should be free from any bias motifs and should contain only Transcription Factor (TF) motifs.	For each of these motifs, we use TOMTOM to find the top-3 closest matches (match_0, match_1, match_2) from a database consisting of both 	MEME TF motifs and heterogenous enzyme bias motifs that we have repeatedly seen in our datasets.  	The qvals (qval0,qval1,qval2) should be low (< 0.0001) for most of the closest TF motif hits (i.e indicating that the closest match is the correct match) - this is also generally 	verifiable by eye as the closest match will look closely like the CWMs (atleast part of it in case of heterodimers). All the motifs in the list should look nothing like the enzyme bias motif. 	<br> 	<br> 	<b> What to do if you find an obvious bias motif in the list? </b> <br>     This indicates that your bias model was not completely capturing the response of the bias. We recommend that you 	use a different pre-trained bias model. For more intuition on choosing the correct pre-trained model or retraining your bias model refer to 	<a href="https://github.com/kundajelab/chrombpnet/wiki/FAQ">FAQ</a> section in wiki. 	<br> 	<br> 	<b> What to do if you find an obvious bias motif in the list? </b> <br></p>
+				</body>
+				<body>
+					 <table border="1" class="new">
+  <thead>
+    <tr style="text-align: right;">
+      <th>pattern</th>
+      <th>NumSeqs</th>
+      <th>cwm_fwd</th>
+      <th>cwm_rev</th>
+      <th>match0</th>
+      <th>qval0</th>
+      <th>match0_logo</th>
+      <th>match1</th>
+      <th>qval1</th>
+      <th>match1_logo</th>
+      <th>match2</th>
+      <th>qval2</th>
+      <th>match2_logo</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>pos__0</td>
+      <td>10622</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_0.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_0.cwm.rev.png" width="240", class="cover" ></td>
+      <td>SPI1_HUMAN.H11MO.0.A</td>
+      <td>9.455600e-03</td>
+      <td><img src="./modisco_profile/SPI1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SPIB_HUMAN.H11MO.0.A</td>
+      <td>9.455600e-03</td>
+      <td><img src="./modisco_profile/SPIB_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SPIB_ETS_1</td>
+      <td>2.160460e-02</td>
+      <td><img src="./modisco_profile/SPIB_ETS_1.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__1</td>
+      <td>6260</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_1.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_1.cwm.rev.png" width="240", class="cover" ></td>
+      <td>CEBPA_MOUSE.H11MO.0.A</td>
+      <td>1.727880e-06</td>
+      <td><img src="./modisco_profile/CEBPA_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>CEBPA_MA0102.3</td>
+      <td>1.727880e-06</td>
+      <td><img src="./modisco_profile/CEBPA_MA0102.3.png" width="240", class="cover" ></td>
+      <td>CEBPA_HUMAN.H11MO.0.A</td>
+      <td>9.760370e-06</td>
+      <td><img src="./modisco_profile/CEBPA_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__2</td>
+      <td>2798</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_2.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_2.cwm.rev.png" width="240", class="cover" ></td>
+      <td>NFYA_HUMAN.H11MO.0.A</td>
+      <td>1.794260e-04</td>
+      <td><img src="./modisco_profile/NFYA_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>NFYA_MOUSE.H11MO.0.A</td>
+      <td>1.794260e-04</td>
+      <td><img src="./modisco_profile/NFYA_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>NFYC_HUMAN.H11MO.0.A</td>
+      <td>1.794260e-04</td>
+      <td><img src="./modisco_profile/NFYC_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__3</td>
+      <td>2461</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_3.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_3.cwm.rev.png" width="240", class="cover" ></td>
+      <td>KLF3_HUMAN.H11MO.0.B</td>
+      <td>7.397580e-05</td>
+      <td><img src="./modisco_profile/KLF3_HUMAN.H11MO.0.B.png" width="240", class="cover" ></td>
+      <td>KLF3_MOUSE.H11MO.0.A</td>
+      <td>7.397580e-05</td>
+      <td><img src="./modisco_profile/KLF3_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>KLF12_HUMAN.H11MO.0.C</td>
+      <td>7.397580e-05</td>
+      <td><img src="./modisco_profile/KLF12_HUMAN.H11MO.0.C.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__4</td>
+      <td>1212</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_4.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_4.cwm.rev.png" width="240", class="cover" ></td>
+      <td>ATF3_MOUSE.H11MO.0.A</td>
+      <td>4.993350e-03</td>
+      <td><img src="./modisco_profile/ATF3_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>JUNB_HUMAN.H11MO.0.A</td>
+      <td>4.993350e-03</td>
+      <td><img src="./modisco_profile/JUNB_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>JUND_HUMAN.H11MO.0.A</td>
+      <td>4.993350e-03</td>
+      <td><img src="./modisco_profile/JUND_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__5</td>
+      <td>1087</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_5.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_5.cwm.rev.png" width="240", class="cover" ></td>
+      <td>RUNX1_HUMAN.H11MO.0.A</td>
+      <td>2.453070e-03</td>
+      <td><img src="./modisco_profile/RUNX1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>RUNX1_MOUSE.H11MO.0.A</td>
+      <td>2.453070e-03</td>
+      <td><img src="./modisco_profile/RUNX1_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>RUNX2_MOUSE.H11MO.0.A</td>
+      <td>2.453070e-03</td>
+      <td><img src="./modisco_profile/RUNX2_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__6</td>
+      <td>973</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_6.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_6.cwm.rev.png" width="240", class="cover" ></td>
+      <td>CTCF_MA0139.1</td>
+      <td>1.563340e-14</td>
+      <td><img src="./modisco_profile/CTCF_MA0139.1.png" width="240", class="cover" ></td>
+      <td>CTCF_HUMAN.H11MO.0.A</td>
+      <td>9.811370e-13</td>
+      <td><img src="./modisco_profile/CTCF_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>CTCF_MOUSE.H11MO.0.A</td>
+      <td>9.811370e-13</td>
+      <td><img src="./modisco_profile/CTCF_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__7</td>
+      <td>794</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_7.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_7.cwm.rev.png" width="240", class="cover" ></td>
+      <td>FOSL2+JUN_MA1131.1</td>
+      <td>6.548000e-05</td>
+      <td><img src="./modisco_profile/FOSL2+JUN_MA1131.1.png" width="240", class="cover" ></td>
+      <td>CREB1_HUMAN.H11MO.0.A</td>
+      <td>8.031470e-05</td>
+      <td><img src="./modisco_profile/CREB1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>CREB1_MOUSE.H11MO.0.A</td>
+      <td>8.031470e-05</td>
+      <td><img src="./modisco_profile/CREB1_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__8</td>
+      <td>650</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_8.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_8.cwm.rev.png" width="240", class="cover" ></td>
+      <td>JUN_MA0488.1</td>
+      <td>1.217770e-01</td>
+      <td><img src="./modisco_profile/JUN_MA0488.1.png" width="240", class="cover" ></td>
+      <td>RORB_MA1150.1</td>
+      <td>1.217770e-01</td>
+      <td><img src="./modisco_profile/RORB_MA1150.1.png" width="240", class="cover" ></td>
+      <td>ATF2_HUMAN.H11MO.0.B</td>
+      <td>1.217770e-01</td>
+      <td><img src="./modisco_profile/ATF2_HUMAN.H11MO.0.B.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__9</td>
+      <td>549</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_9.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_9.cwm.rev.png" width="240", class="cover" ></td>
+      <td>ZNF76_HUMAN.H11MO.0.C</td>
+      <td>3.129580e-18</td>
+      <td><img src="./modisco_profile/ZNF76_HUMAN.H11MO.0.C.png" width="240", class="cover" ></td>
+      <td>ZN143_HUMAN.H11MO.0.A</td>
+      <td>9.526280e-11</td>
+      <td><img src="./modisco_profile/ZN143_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>THA11_HUMAN.H11MO.0.B</td>
+      <td>1.362640e-10</td>
+      <td><img src="./modisco_profile/THA11_HUMAN.H11MO.0.B.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__10</td>
+      <td>399</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_10.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_10.cwm.rev.png" width="240", class="cover" ></td>
+      <td>TFEB_MA0692.1</td>
+      <td>2.665710e-04</td>
+      <td><img src="./modisco_profile/TFEB_MA0692.1.png" width="240", class="cover" ></td>
+      <td>TFEB_bHLH_1</td>
+      <td>2.665710e-04</td>
+      <td><img src="./modisco_profile/TFEB_bHLH_1.png" width="240", class="cover" ></td>
+      <td>USF1_MA0093.2</td>
+      <td>2.766570e-04</td>
+      <td><img src="./modisco_profile/USF1_MA0093.2.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__11</td>
+      <td>342</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_11.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_11.cwm.rev.png" width="240", class="cover" ></td>
+      <td>NRF1_HUMAN.H11MO.0.A</td>
+      <td>9.329350e-06</td>
+      <td><img src="./modisco_profile/NRF1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>NRF1_MOUSE.H11MO.0.A</td>
+      <td>9.329350e-06</td>
+      <td><img src="./modisco_profile/NRF1_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>NRF1_NRF_1</td>
+      <td>1.609980e-05</td>
+      <td><img src="./modisco_profile/NRF1_NRF_1.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__12</td>
+      <td>231</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_12.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_12.cwm.rev.png" width="240", class="cover" ></td>
+      <td>MITF_HUMAN.H11MO.0.A</td>
+      <td>6.731820e-05</td>
+      <td><img src="./modisco_profile/MITF_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>USF1_MA0093.2</td>
+      <td>6.731820e-05</td>
+      <td><img src="./modisco_profile/USF1_MA0093.2.png" width="240", class="cover" ></td>
+      <td>TFE3_MA0831.2</td>
+      <td>1.349230e-04</td>
+      <td><img src="./modisco_profile/TFE3_MA0831.2.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__13</td>
+      <td>179</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_13.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_13.cwm.rev.png" width="240", class="cover" ></td>
+      <td>RREB1_MA0073.1</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/RREB1_MA0073.1.png" width="240", class="cover" ></td>
+      <td>VEZF1_HUMAN.H11MO.0.C</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/VEZF1_HUMAN.H11MO.0.C.png" width="240", class="cover" ></td>
+      <td>None</td>
+      <td>NaN</td>
+      <td><img src="NA" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__14</td>
+      <td>169</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_14.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_14.cwm.rev.png" width="240", class="cover" ></td>
+      <td>ZBTB33_MA0527.1</td>
+      <td>1.520290e-04</td>
+      <td><img src="./modisco_profile/ZBTB33_MA0527.1.png" width="240", class="cover" ></td>
+      <td>KAISO_HUMAN.H11MO.0.A</td>
+      <td>3.130630e-04</td>
+      <td><img src="./modisco_profile/KAISO_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>KAISO_MOUSE.H11MO.0.B</td>
+      <td>3.130630e-04</td>
+      <td><img src="./modisco_profile/KAISO_MOUSE.H11MO.0.B.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__15</td>
+      <td>44</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_15.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_15.cwm.rev.png" width="240", class="cover" ></td>
+      <td>EWSR1-FLI1_MA0149.1</td>
+      <td>2.267040e-01</td>
+      <td><img src="./modisco_profile/EWSR1-FLI1_MA0149.1.png" width="240", class="cover" ></td>
+      <td>FLI1_HUMAN.H11MO.0.A</td>
+      <td>2.267040e-01</td>
+      <td><img src="./modisco_profile/FLI1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>ETS1_HUMAN.H11MO.0.A</td>
+      <td>2.267040e-01</td>
+      <td><img src="./modisco_profile/ETS1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__16</td>
+      <td>38</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_16.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_16.cwm.rev.png" width="240", class="cover" ></td>
+      <td>HLF_MOUSE.H11MO.0.C</td>
+      <td>8.569320e-01</td>
+      <td><img src="./modisco_profile/HLF_MOUSE.H11MO.0.C.png" width="240", class="cover" ></td>
+      <td>CEBPA_MOUSE.H11MO.0.A</td>
+      <td>8.569320e-01</td>
+      <td><img src="./modisco_profile/CEBPA_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>CEBPE_HUMAN.H11MO.0.A</td>
+      <td>8.569320e-01</td>
+      <td><img src="./modisco_profile/CEBPE_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__17</td>
+      <td>38</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_17.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_17.cwm.rev.png" width="240", class="cover" ></td>
+      <td>KLF5_MA0599.1</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/KLF5_MA0599.1.png" width="240", class="cover" ></td>
+      <td>KLF4_HUMAN.H11MO.0.A</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/KLF4_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>KLF5_HUMAN.H11MO.0.A</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/KLF5_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__18</td>
+      <td>36</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_18.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_18.cwm.rev.png" width="240", class="cover" ></td>
+      <td>RFX5_MA0510.2</td>
+      <td>1.311820e-09</td>
+      <td><img src="./modisco_profile/RFX5_MA0510.2.png" width="240", class="cover" ></td>
+      <td>RFX5_RFX_1</td>
+      <td>1.311820e-09</td>
+      <td><img src="./modisco_profile/RFX5_RFX_1.png" width="240", class="cover" ></td>
+      <td>RFX2_MA0600.2</td>
+      <td>1.311820e-09</td>
+      <td><img src="./modisco_profile/RFX2_MA0600.2.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__19</td>
+      <td>33</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_19.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_19.cwm.rev.png" width="240", class="cover" ></td>
+      <td>ZFP28_HUMAN.H11MO.0.C</td>
+      <td>7.802010e-01</td>
+      <td><img src="./modisco_profile/ZFP28_HUMAN.H11MO.0.C.png" width="240", class="cover" ></td>
+      <td>SPIC_ETS_1</td>
+      <td>7.802010e-01</td>
+      <td><img src="./modisco_profile/SPIC_ETS_1.png" width="240", class="cover" ></td>
+      <td>SPIC_MA0687.1</td>
+      <td>7.802010e-01</td>
+      <td><img src="./modisco_profile/SPIC_MA0687.1.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__20</td>
+      <td>30</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_20.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_20.cwm.rev.png" width="240", class="cover" ></td>
+      <td>RUNX3_RUNX_1</td>
+      <td>3.685350e-04</td>
+      <td><img src="./modisco_profile/RUNX3_RUNX_1.png" width="240", class="cover" ></td>
+      <td>RUNX2_RUNX_1</td>
+      <td>3.685350e-04</td>
+      <td><img src="./modisco_profile/RUNX2_RUNX_1.png" width="240", class="cover" ></td>
+      <td>RUNX1_MA0002.2</td>
+      <td>5.817470e-02</td>
+      <td><img src="./modisco_profile/RUNX1_MA0002.2.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__21</td>
+      <td>27</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_21.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_21.cwm.rev.png" width="240", class="cover" ></td>
+      <td>NRF1_NRF_1</td>
+      <td>8.072040e-02</td>
+      <td><img src="./modisco_profile/NRF1_NRF_1.png" width="240", class="cover" ></td>
+      <td>NRF1_MA0506.1</td>
+      <td>2.358510e-01</td>
+      <td><img src="./modisco_profile/NRF1_MA0506.1.png" width="240", class="cover" ></td>
+      <td>NRF1_HUMAN.H11MO.0.A</td>
+      <td>2.394210e-01</td>
+      <td><img src="./modisco_profile/NRF1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__22</td>
+      <td>24</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_22.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_22.cwm.rev.png" width="240", class="cover" ></td>
+      <td>SPIB_MOUSE.H11MO.0.A</td>
+      <td>2.317080e-01</td>
+      <td><img src="./modisco_profile/SPIB_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>JUN_MA0489.1</td>
+      <td>2.317080e-01</td>
+      <td><img src="./modisco_profile/JUN_MA0489.1.png" width="240", class="cover" ></td>
+      <td>IRF4_MOUSE.H11MO.0.A</td>
+      <td>2.317080e-01</td>
+      <td><img src="./modisco_profile/IRF4_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__23</td>
+      <td>22</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_23.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_23.cwm.rev.png" width="240", class="cover" ></td>
+      <td>DDIT3_MOUSE.H11MO.0.C</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/DDIT3_MOUSE.H11MO.0.C.png" width="240", class="cover" ></td>
+      <td>ZSC31_HUMAN.H11MO.0.C</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/ZSC31_HUMAN.H11MO.0.C.png" width="240", class="cover" ></td>
+      <td>RARA_nuclearreceptor_4</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/RARA_nuclearreceptor_4.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__24</td>
+      <td>21</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_24.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_24.cwm.rev.png" width="240", class="cover" ></td>
+      <td>BC11A_HUMAN.H11MO.0.A</td>
+      <td>1.735530e-02</td>
+      <td><img src="./modisco_profile/BC11A_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>FOXO1_HUMAN.H11MO.0.A</td>
+      <td>1.735530e-02</td>
+      <td><img src="./modisco_profile/FOXO1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>PRDM6_HUMAN.H11MO.0.C</td>
+      <td>2.820240e-02</td>
+      <td><img src="./modisco_profile/PRDM6_HUMAN.H11MO.0.C.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>neg__0</td>
+      <td>51</td>
+      <td><img src="./modisco_profile/trimmed_logos/neg_patterns.pattern_0.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/neg_patterns.pattern_0.cwm.rev.png" width="240", class="cover" ></td>
+      <td>ZBT7A_HUMAN.H11MO.0.A</td>
+      <td>1.660940e-02</td>
+      <td><img src="./modisco_profile/ZBT7A_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>ZBT7A_MOUSE.H11MO.0.B</td>
+      <td>1.660940e-02</td>
+      <td><img src="./modisco_profile/ZBT7A_MOUSE.H11MO.0.B.png" width="240", class="cover" ></td>
+      <td>ZNF740_C2H2_1</td>
+      <td>1.660940e-02</td>
+      <td><img src="./modisco_profile/ZNF740_C2H2_1.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>neg__1</td>
+      <td>50</td>
+      <td><img src="./modisco_profile/trimmed_logos/neg_patterns.pattern_1.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/neg_patterns.pattern_1.cwm.rev.png" width="240", class="cover" ></td>
+      <td>ZNF384_MA1125.1</td>
+      <td>5.823420e-01</td>
+      <td><img src="./modisco_profile/ZNF384_MA1125.1.png" width="240", class="cover" ></td>
+      <td>MEF2A_MOUSE.H11MO.0.A</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/MEF2A_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>MEF2A_HUMAN.H11MO.0.A</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/MEF2A_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>neg__2</td>
+      <td>49</td>
+      <td><img src="./modisco_profile/trimmed_logos/neg_patterns.pattern_2.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/neg_patterns.pattern_2.cwm.rev.png" width="240", class="cover" ></td>
+      <td>BC11A_HUMAN.H11MO.0.A</td>
+      <td>1.112280e-01</td>
+      <td><img src="./modisco_profile/BC11A_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SPI1_MOUSE.H11MO.0.A</td>
+      <td>1.112280e-01</td>
+      <td><img src="./modisco_profile/SPI1_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SPI1_HUMAN.H11MO.0.A</td>
+      <td>1.112280e-01</td>
+      <td><img src="./modisco_profile/SPI1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>neg__3</td>
+      <td>47</td>
+      <td><img src="./modisco_profile/trimmed_logos/neg_patterns.pattern_3.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/neg_patterns.pattern_3.cwm.rev.png" width="240", class="cover" ></td>
+      <td>ZEB1_HUMAN.H11MO.0.A</td>
+      <td>8.407670e-03</td>
+      <td><img src="./modisco_profile/ZEB1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>ZEB1_MOUSE.H11MO.0.B</td>
+      <td>8.407670e-03</td>
+      <td><img src="./modisco_profile/ZEB1_MOUSE.H11MO.0.B.png" width="240", class="cover" ></td>
+      <td>SNAI1_HUMAN.H11MO.0.C</td>
+      <td>4.799880e-02</td>
+      <td><img src="./modisco_profile/SNAI1_HUMAN.H11MO.0.C.png" width="240", class="cover" ></td>
+    </tr>
+  </tbody>
+</table>
+				</body>
+			
+	</html>
+		

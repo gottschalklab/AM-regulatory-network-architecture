@@ -1,0 +1,37 @@
+---
+title: "netPaper_ChipSeeker"
+author: "Sonia Kruszelnicki"
+date: "2025-02-22"
+output: html_document
+---
+
+```{r setup, echo = FALSE}
+library(tidyr)
+library(dplyr)
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("TxDb.Mmusculus.UCSC.mm10.knownGene")
+BiocManager::install("ChIPseeker")
+BiocManager::install("clusterProfiler")
+BiocManager::install("ReactomePA")
+library(ReactomePA)
+library(ChIPseeker)
+library(TxDb.Mmusculus.UCSC.mm10.knownGene)
+txdb <- TxDb.Mmusculus.UCSC.mm10.knownGene
+library(clusterProfiler)
+library(org.Mm.eg.db)
+library(ggplot2)
+```
+
+
+```{r}
+unionfile <- "20250611_rehman_merged_homerMotifs.bed"
+unionpeak <- readPeakFile(unionfile)
+union_peakAnno_all <- annotatePeak(unionpeak, tssRegion=c(-100000, 100000),TxDb=txdb, annoDb="org.Mm.eg.db")
+union_peakAnno_alldf <- as.data.frame(union_peakAnno_all)
+
+write.csv(union_peakAnno_alldf,"20260127_rehmanunionpeakAnno.csv")
+```
+
+

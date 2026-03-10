@@ -1,0 +1,134 @@
+---
+title: "AM topics"
+output: html_notebook
+---
+
+```{r, echo=FALSE}
+library(Matrix)
+#install.packages("fastTopics")
+library(ggplot2)
+library(cowplot)
+library(fastTopics)
+library(arrow)
+library(igraph)
+library(tidyverse)
+library(Rtsne)
+setwd("/bgfs/rgottschalk/Sonia/CellOracle/topicModeling")
+```
+
+```{r, echo=FALSE}
+AMmatrix <- readMM("//bgfs//rgottschalk//Sonia//CellOracle//20250320_GSE280003_allAM_expression.mtx")
+cols <- read.csv("//bgfs//rgottschalk//Sonia//CellOracle//20250320_GSE280003_allAM_expression_col_names.tsv", sep="\t", header=FALSE)
+rows <- read.csv("//bgfs//rgottschalk//Sonia//CellOracle//20250320_GSE280003_allAM_expression_row_names.tsv", sep="\t", header=FALSE)
+colnames(AMmatrix) <- cols$V1
+row.names(AMmatrix) <- rows$V1
+AMmatrix <- t(AMmatrix)
+AMmatrix <- as(AMmatrix, "CsparseMatrix") 
+fit7 <- readRDS("20250324_GSE280003_AMsLPS_Topicfit7_iter150.RDS")
+nonzero_genes <- row.names(fit7$F)
+AMmtx <- AMmatrix[,nonzero_genes]
+
+AMlabels <- read.csv("//bgfs//rgottschalk//Sonia//CellOracle//20250325_GSE280003_barcode_labels.csv")
+AMlabels <- list(barcodes = AMlabels$X, labs =AMlabels$label)
+
+AMdf <- read_parquet("//bgfs//rgottschalk//Sonia//CellOracle//GSE280003_scRNAseq//20250304_GSE280003_allAM_expression_table.parquet")
+row.names(AMdf) <- AMlabels$barcodes
+AMdf <- as.data.frame(AMdf)
+
+
+AMdf$TIME <- AMlabels$labs
+```
+```{r, echo=FALSE}
+set.seed(100)
+current <- fit7
+emb <- tsne_from_topics(current, dims = 2, normalize = TRUE, perplexity = 100)
+tsne_plot(current, Y=emb)
+tsne_plot(current, Y=emb, fill=AMlabels$labs)
+```
+```{r}
+test <- kmeans(current$L, centers = 4)
+AMdf$CLUST <- test$cluster
+tsne_plot(current, Y=emb, fill=AMdf$CLUST)
+```
+```{r}
+tsne_df$TIME <- MoMac$TIME
+colors <- c("#E6194B", "#4363D8", "#3CB44B", "#911EB4")
+plt <- ggplot(tsne_df, aes(x = X, y = Y)) +
+  geom_point(aes(fill=factor(TIME)), color="white", pch=21) +
+  scale_fill_manual(values=colors)
+plt + theme_classic() + labs(
+  title = "Monocytes/Macrophages",
+  x = "t-SNE Dimension 1",
+  y = "t-SNE Dimension 2"
+)
+```
+
+```{r}
+MoMac <- subset(AMdf, (CLUST == 3 | CLUST == 4))
+RAMonly <- subset(AMdf, CLUST == 4)
+MoOnly <- subset(AMdf, CLUST == 3)
+#write.csv(row.names(RAMonly), '20251024_clust4_RAM_barcodes.csv')
+#write.csv(row.names(MoOnly), '20251024_clust3_MoM_barcodes.csv')
+temp <- as.data.frame(current$L)
+MoMac_L <- temp %>% filter(row.names(temp) %in% row.names(MoMac))
+#write.csv(MoMac_L, '20251210_topicModeling_fit7_MoMac_L.csv')
+MoMac_tsne_res <- Rtsne(MoMac_L, dims=2, perplexity=100, max_iter = 1000)
+coords_out <- MoMac_tsne_res$Y
+row.names(coords_out) <- row.names(MoMac_L)
+#write.csv(coords_out, '20251210_MoMac_tsne_coords.csv')
+tsne_df <- data.frame(
+  X = MoMac_tsne_res$Y[, 1],
+  Y = MoMac_tsne_res$Y[, 2]
+)
+tsne_df$K7 <- MoMac_L$k7
+tsne_df$K4 <- MoMac_L$k4
+tsne_df$K5 <- MoMac_L$k5
+tsne_df$K1 <- MoMac_L$k1
+tsne_df$K2 <- MoMac_L$k2
+tsne_df$K3 <- MoMac_L$k3
+tsne_df$K6 <- MoMac_L$k6
+```
+```{r}
+ggplot(tsne_df, aes(x = X, y = Y, color=K4)) +
+  geom_point() +
+  scale_color_gradient(low='#141647', high='#ffe959') +
+  labs(
+    title = "k4",
+    x = "t-SNE Dimension 1",
+    y = "t-SNE Dimension 2"
+  ) + 
+  theme_classic()
+ggplot(tsne_df, aes(x = X, y = Y, color=K5)) +
+  geom_point() +
+  scale_color_gradient(low='#141647', high='#ffe959') +
+  labs(
+    title = "k5",
+    x = "t-SNE Dimension 1",
+    y = "t-SNE Dimension 2"
+  ) + 
+  theme_classic()
+ggplot(tsne_df, aes(x = X, y = Y, color=K7)) +
+  geom_point() +
+  scale_color_gradient(low='#141647', high='#ffe959') +
+  labs(
+    title = "k7",
+    x = "t-SNE Dimension 1",
+    y = "t-SNE Dimension 2"
+  ) + 
+  theme_classic()
+```
+```{r}
+tsne_df$CLUST <- MoMac$CLUST
+p2 <- ggplot(tsne_df, aes(x = X, y = Y, fill=factor(CLUST))) +
+  geom_point(pch=21) +
+  scale_fill_manual(values=c('#fc8d62', '#66c2a5'), guide="none")
+p2 + theme_classic() + labs(
+  title = "Monocytes/Macrophages",
+  x = "t-SNE Dimension 1",
+  y = "t-SNE Dimension 2"
+)
+```
+
+
+
+

@@ -1,0 +1,342 @@
+
+		<html>
+			<head>
+				<title>Bias model training and quality check report</title>
+			</head>	
+			<body>
+				<h3>Bias model training and quality check report</h3>
+			</body>
+			<body>
+			    <style> 
+  				    table.dataframe, th, td {font-size:11pt; border:1px solid black; border-collapse:collapse; text-align:center;}
+ 				   th, td {padding: 5px;}
+			    </style>
+			    <style> 
+  				    table.new {font-size:11pt; border:1px solid black; width:100% ; border-collapse:collapse; text-align:center;}
+ 				   th, td {padding: 5px;}
+			    </style>
+			</body>
+			
+			<body style="font-size:22px;">
+				<h3>Preprocessing report</h3>
+				<p>The image below should look closely like a Tn5 or DNase bias enzyme motif. </p>
+				<img src=./AM_fold4_bw_shift_qc.png style="max-width: 60%;">
+			</body>
+			<body style="font-size:22px;">
+				<h3>Training report</h3>			
+				<p>The val loss (validation loss) will decrease and saturate after a few epochs.</p>
+				<img src=./AM_fold4_epoch_loss.png class="center", style="max-width: 20%">
+			</body>
+			
+			<body style="font-size:20px;">
+				<h3>Bias model performance in peaks and non-peaks</h3>
+				<p><b> Counts Metrics: </b> The pearsonr in non-peaks should be greater than 0 (higher the better). 	The pearsonr in peaks should be greater than -0.3 (otherwise the bias model could potentially be capturing AT bias). 	MSE (Mean Squared Error) will be high in peaks. <br> <br> <b> Profile Metrics:</b>  Median JSD (Jensen Shannon Divergence between observed and predicted) lower the better. 	Median norm JSD is median of the min-max normalized JSD where min JSD is the worst case JSD i.e JSD of observed with uniform profile and 	max JSD is the best case JSD i.e 0. Median norm JSD is higher the better. Both JSD and median norm JSD are sensitive to read-depth. 	Higher read-depth results in better metrics. 	<br> 	<br> 	<b> What to do if your pearsonr in peaks is less than -0.3? </b> 	In the range of -0.3 to -0.5 please be wary of your chrombpnet_wo_bias.h5  (that wil potentially be trained with this bias model) TFModisco showing lots of GC rich motifs (> 3 in the top-10). If this is not the case 	you can continue using the chrombpnet_wo_bias.h5. If you end up seeing a lot of GC rich motifs it is likely that bias model has learnt a different GC distribution than your GC-content in peaks. 	You might benefit from increasing the bias_threshold_factor argument input to the <em>chrombpnet bias pipeline</em> or <em>chrombpnet bias train</em> command used in training the bias model 	and retrain a new bias model. For more intuition about this argument refer to the <a href="https://github.com/kundajelab/chrombpnet/wiki/FAQ">FAQ</a> section in wiki. 	If the value is less than -0.5 the <a href="https://github.com/kundajelab/chrombpnet/wiki/ChromBPNet-training">chrombpnet training</a> will automatically throw an error.</p>
+			</body>
+				<body>
+					<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: center;">
+      <th></th>
+      <th>nonpeaks.pearsonr</th>
+      <th>nonpeaks.mse</th>
+      <th>peaks.pearsonr</th>
+      <th>peaks.mse</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>counts_metrics</th>
+      <td>0.41</td>
+      <td>0.63</td>
+      <td>0.36</td>
+      <td>11.02</td>
+    </tr>
+  </tbody>
+</table>
+				</body>
+				</body>
+					<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: center;">
+      <th></th>
+      <th>nonpeaks.median_jsd</th>
+      <th>nonpeaks.median_norm_jsd</th>
+      <th>peaks.median_jsd</th>
+      <th>peaks.median_norm_jsd</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>profile_metrics</th>
+      <td>0.8</td>
+      <td>0.02</td>
+      <td>0.6</td>
+      <td>0.16</td>
+    </tr>
+  </tbody>
+</table>
+				<body>
+			<body style="font-size:20px;">
+				<h3>TFModisco motifs learnt from bias model (bias.h5) model</h3>
+				<p><b> TFModisco motifs generated from profile contribution scores of the bias model. </b> 	cwm_fwd, cwm_rev are the forward and reverse complemented consolidated motifs from contribution scores in subset of random peaks. 	These CWM motifs should be free from any Transcription Factor (TF) motifs and should contain either only bias motifs or random repeats.	For each of these motifs, we use TOMTOM to find the top-3 closest matches (match_0, match_1, match_2) from a database consisting of both 	MEME TF motifs and heterogenous enzyme bias motifs that we have repeatedly seen in our datasets.  	The qvals (qval0,qval1,qval2) should be high (> 0.0001) if the closest hit is a TF motif (i.e indicating that the closest match is not the correct match) - this is also generally 	verifiable by eye as the closest match will look nothing like the CWMs. The qvals should be low if the closest hit is enzyme bias motif and 	generally verifiable that the top match looks like the CWM. The first 3-5 motifs in the list below should look like enzyme bias motif. 	<br> 	<br> 	<b> What to do if you find an obvious TF motif in the list? </b> <br> 	Do not use this bias model as it will regress the contribution of the TF motifs (along with bias motifs) from the chrombpnet_nobias.h5. Reduce the bias_threshold_factor argument 	input to the <em>chrombpnet bias pipeline</em> or <em>chrombpnet bias train</em> command used in training the bias model and retrain a new bias model. For more intuition about this argument 	refer to the <a href="https://github.com/kundajelab/chrombpnet/wiki/FAQ">FAQ</a> section in wiki. 	<br> 	<br> 	<b> What to do if you are unsure if a given CWM motif is resembling the match_0 logo for example? </b> <br> 	Get marginal footprint on the match_0 motif logo (using the command <em>chrombpnet footprints</em> and make sure that the bias models footprint is closer to that of controls with no motif 	inserted - for examples look at <a href="https://github.com/kundajelab/chrombpnet/wiki/FAQ">FAQ</a> )</p>
+			</body>
+			<body>
+				 <table border="1" class="new">
+  <thead>
+    <tr style="text-align: right;">
+      <th>pattern</th>
+      <th>NumSeqs</th>
+      <th>cwm_fwd</th>
+      <th>cwm_rev</th>
+      <th>match0</th>
+      <th>qval0</th>
+      <th>match0_logo</th>
+      <th>match1</th>
+      <th>qval1</th>
+      <th>match1_logo</th>
+      <th>match2</th>
+      <th>qval2</th>
+      <th>match2_logo</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>pos__0</td>
+      <td>13851</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_0.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_0.cwm.rev.png" width="240", class="cover" ></td>
+      <td>TN5_2</td>
+      <td>1.958340e-05</td>
+      <td><img src="./modisco_profile/TN5_2.png" width="240", class="cover" ></td>
+      <td>TN5_1</td>
+      <td>1.033280e-04</td>
+      <td><img src="./modisco_profile/TN5_1.png" width="240", class="cover" ></td>
+      <td>TN5_7</td>
+      <td>0.066169</td>
+      <td><img src="./modisco_profile/TN5_7.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__1</td>
+      <td>10496</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_1.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_1.cwm.rev.png" width="240", class="cover" ></td>
+      <td>TN5_2</td>
+      <td>1.695910e-05</td>
+      <td><img src="./modisco_profile/TN5_2.png" width="240", class="cover" ></td>
+      <td>TN5_1</td>
+      <td>1.695910e-05</td>
+      <td><img src="./modisco_profile/TN5_1.png" width="240", class="cover" ></td>
+      <td>TN5_3</td>
+      <td>0.000383</td>
+      <td><img src="./modisco_profile/TN5_3.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__2</td>
+      <td>1975</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_2.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_2.cwm.rev.png" width="240", class="cover" ></td>
+      <td>TN5_3</td>
+      <td>1.051430e-08</td>
+      <td><img src="./modisco_profile/TN5_3.png" width="240", class="cover" ></td>
+      <td>TN5_1</td>
+      <td>1.375800e-04</td>
+      <td><img src="./modisco_profile/TN5_1.png" width="240", class="cover" ></td>
+      <td>TN5_7</td>
+      <td>0.012367</td>
+      <td><img src="./modisco_profile/TN5_7.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__3</td>
+      <td>1300</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_3.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_3.cwm.rev.png" width="240", class="cover" ></td>
+      <td>TN5_3</td>
+      <td>9.217250e-05</td>
+      <td><img src="./modisco_profile/TN5_3.png" width="240", class="cover" ></td>
+      <td>TN5_1</td>
+      <td>4.365690e-04</td>
+      <td><img src="./modisco_profile/TN5_1.png" width="240", class="cover" ></td>
+      <td>TN5_7</td>
+      <td>0.125722</td>
+      <td><img src="./modisco_profile/TN5_7.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__4</td>
+      <td>488</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_4.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_4.cwm.rev.png" width="240", class="cover" ></td>
+      <td>TN5_3</td>
+      <td>4.503540e-04</td>
+      <td><img src="./modisco_profile/TN5_3.png" width="240", class="cover" ></td>
+      <td>TN5_7</td>
+      <td>5.557130e-04</td>
+      <td><img src="./modisco_profile/TN5_7.png" width="240", class="cover" ></td>
+      <td>TN5_4</td>
+      <td>0.027124</td>
+      <td><img src="./modisco_profile/TN5_4.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__5</td>
+      <td>234</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_5.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_5.cwm.rev.png" width="240", class="cover" ></td>
+      <td>TN5_6</td>
+      <td>1.813210e-03</td>
+      <td><img src="./modisco_profile/TN5_6.png" width="240", class="cover" ></td>
+      <td>PAX5_HUMAN.H11MO.0.A</td>
+      <td>5.351320e-02</td>
+      <td><img src="./modisco_profile/PAX5_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>ZN322_MOUSE.H11MO.0.B</td>
+      <td>0.053513</td>
+      <td><img src="./modisco_profile/ZN322_MOUSE.H11MO.0.B.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__6</td>
+      <td>188</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_6.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_6.cwm.rev.png" width="240", class="cover" ></td>
+      <td>TN5_1</td>
+      <td>1.428110e-01</td>
+      <td><img src="./modisco_profile/TN5_1.png" width="240", class="cover" ></td>
+      <td>ZN329_HUMAN.H11MO.0.C</td>
+      <td>3.216190e-01</td>
+      <td><img src="./modisco_profile/ZN329_HUMAN.H11MO.0.C.png" width="240", class="cover" ></td>
+      <td>TFAP2C_TFAP_6</td>
+      <td>0.321619</td>
+      <td><img src="./modisco_profile/TFAP2C_TFAP_6.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__7</td>
+      <td>59</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_7.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_7.cwm.rev.png" width="240", class="cover" ></td>
+      <td>RREB1_MA0073.1</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/RREB1_MA0073.1.png" width="240", class="cover" ></td>
+      <td>EGR2_HUMAN.H11MO.0.A</td>
+      <td>1.000000e+00</td>
+      <td><img src="./modisco_profile/EGR2_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>KLF9_MA1107.1</td>
+      <td>1.000000</td>
+      <td><img src="./modisco_profile/KLF9_MA1107.1.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__8</td>
+      <td>21</td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_8.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_profile/trimmed_logos/pos_patterns.pattern_8.cwm.rev.png" width="240", class="cover" ></td>
+      <td>TBX21_TBX_3</td>
+      <td>3.016630e-01</td>
+      <td><img src="./modisco_profile/TBX21_TBX_3.png" width="240", class="cover" ></td>
+      <td>TBX1_TBX_4</td>
+      <td>3.016630e-01</td>
+      <td><img src="./modisco_profile/TBX1_TBX_4.png" width="240", class="cover" ></td>
+      <td>TBX21_TBX_6</td>
+      <td>0.466402</td>
+      <td><img src="./modisco_profile/TBX21_TBX_6.png" width="240", class="cover" ></td>
+    </tr>
+</table>
+			</body>
+			<body style="font-size:20px;">
+				<p><b> TFModisco motifs generated from counts contribution scores of the bias model. </b> 	cwm_fwd, cwm_rev are the forward and reverse complemented consolidated motifs from contribution scores in subset of random peaks. 	These motifs should be free from any Transcription Factor (TF) motifs and should contain motifs either weakly related to bias motifs or random repeats. 	For each of these motifs, we use TOMTOM to find the top-3 closest matches (match_0, match_1, match_2) from a database consisting of both 	MEME TF motifs and heterogenous enzyme bias motifs that we have repeatedly seen in our datasets.  	The qvals should be high (> 0.0001) if the closest hit is a TF motif (i.e indicating that the closest match is not the correct match, this is also generally 	verifiable by eye and making sure the closest match looks nothing like the CWMs). 	<br> 	<br> 	<b> What to do if you find an obvious TF motif in the list? </b> <br> 	Do not use this bias model as it will regress the contribution of the TF motifs (along with bias motifs) from the chrombpnet_nobias.h5. Reduce the bias_threshold_factor argument 	input to the <em>chrombpnet bias pipeline</em> or <em>chrombpnet bias train</em> command used in training the bias model and retrain a new bias model. For more intuition about this argument 	refer to the <a href="https://github.com/kundajelab/chrombpnet/wiki/FAQ">FAQ</a> section in wiki. 	<br> 	<br> 	<b> What to do if you are unsure if a given CWM motif is resembling the match_0 logo for example? </b> <br> 	Get marginal footprint on the match_0 motif logo (using the command <em>chrombpnet footprints</em> and make sure that the bias models footprint is closer to that of controls with no motif 	inserted - for examples look at <a href="https://github.com/kundajelab/chrombpnet/wiki/FAQ">FAQ</a> )</p>
+			</body>
+			<body>
+				 <table border="1" class="new">
+  <thead>
+    <tr style="text-align: right;">
+      <th>pattern</th>
+      <th>NumSeqs</th>
+      <th>cwm_fwd</th>
+      <th>cwm_rev</th>
+      <th>match0</th>
+      <th>qval0</th>
+      <th>match0_logo</th>
+      <th>match1</th>
+      <th>qval1</th>
+      <th>match1_logo</th>
+      <th>match2</th>
+      <th>qval2</th>
+      <th>match2_logo</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>pos__0</td>
+      <td>6360</td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_0.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_0.cwm.rev.png" width="240", class="cover" ></td>
+      <td>SP1_HUMAN.H11MO.0.A</td>
+      <td>0.000002</td>
+      <td><img src="./modisco_counts/SP1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SP2_HUMAN.H11MO.0.A</td>
+      <td>0.000004</td>
+      <td><img src="./modisco_counts/SP2_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SP2_MOUSE.H11MO.0.B</td>
+      <td>0.000004</td>
+      <td><img src="./modisco_counts/SP2_MOUSE.H11MO.0.B.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__1</td>
+      <td>4661</td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_1.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_1.cwm.rev.png" width="240", class="cover" ></td>
+      <td>SP2_HUMAN.H11MO.0.A</td>
+      <td>0.001184</td>
+      <td><img src="./modisco_counts/SP2_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SP2_MOUSE.H11MO.0.B</td>
+      <td>0.001184</td>
+      <td><img src="./modisco_counts/SP2_MOUSE.H11MO.0.B.png" width="240", class="cover" ></td>
+      <td>SP1_MOUSE.H11MO.0.A</td>
+      <td>0.003265</td>
+      <td><img src="./modisco_counts/SP1_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__2</td>
+      <td>2970</td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_2.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_2.cwm.rev.png" width="240", class="cover" ></td>
+      <td>SP1_HUMAN.H11MO.0.A</td>
+      <td>0.000308</td>
+      <td><img src="./modisco_counts/SP1_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SP2_HUMAN.H11MO.0.A</td>
+      <td>0.000963</td>
+      <td><img src="./modisco_counts/SP2_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SP2_MOUSE.H11MO.0.B</td>
+      <td>0.000963</td>
+      <td><img src="./modisco_counts/SP2_MOUSE.H11MO.0.B.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__3</td>
+      <td>2538</td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_3.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_3.cwm.rev.png" width="240", class="cover" ></td>
+      <td>SP2_HUMAN.H11MO.0.A</td>
+      <td>0.000105</td>
+      <td><img src="./modisco_counts/SP2_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SP2_MOUSE.H11MO.0.B</td>
+      <td>0.000105</td>
+      <td><img src="./modisco_counts/SP2_MOUSE.H11MO.0.B.png" width="240", class="cover" ></td>
+      <td>SP1_MOUSE.H11MO.0.A</td>
+      <td>0.000105</td>
+      <td><img src="./modisco_counts/SP1_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+    <tr>
+      <td>pos__4</td>
+      <td>2503</td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_4.cwm.fwd.png" width="240", class="cover" ></td>
+      <td><img src="./modisco_counts/trimmed_logos/pos_patterns.pattern_4.cwm.rev.png" width="240", class="cover" ></td>
+      <td>SP2_HUMAN.H11MO.0.A</td>
+      <td>0.000084</td>
+      <td><img src="./modisco_counts/SP2_HUMAN.H11MO.0.A.png" width="240", class="cover" ></td>
+      <td>SP2_MOUSE.H11MO.0.B</td>
+      <td>0.000084</td>
+      <td><img src="./modisco_counts/SP2_MOUSE.H11MO.0.B.png" width="240", class="cover" ></td>
+      <td>SP1_MOUSE.H11MO.0.A</td>
+      <td>0.000175</td>
+      <td><img src="./modisco_counts/SP1_MOUSE.H11MO.0.A.png" width="240", class="cover" ></td>
+    </tr>
+</table>
+			</body>
+		
+	</html>
+		

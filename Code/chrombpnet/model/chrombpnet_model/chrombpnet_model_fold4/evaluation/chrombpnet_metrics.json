@@ -1,0 +1,15 @@
+{
+    "counts_metrics": {
+        "peaks": {
+            "spearmanr": 0.5117021526510743,
+            "pearsonr": 0.5212432839753139,
+            "mse": 0.4253622126644236
+        }
+    },
+    "profile_metrics": {
+        "peaks": {
+            "median_jsd": 0.5036386647251634,
+            "median_norm_jsd": 0.2884170261657032
+        }
+    }
+}

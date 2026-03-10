@@ -17,8 +17,9 @@ This repository contains the code used to generate figures and perform analyses 
 ### Python
 - Python (≥ 3.11)
 
-R and Python package dependencies are listed at the top of each script. For jupyter notebooks refer to requirements.txt.
+Environments for the different analyses are included in the environments folder.
 This code was developed and tested with R 4.2 and Python 3.11.
 
 ### Data Availability
 ATAC-seq data is available at: GSE231217, GSE319365
+Larger data files (.bw, .h5, ect.) are currently available on request.
